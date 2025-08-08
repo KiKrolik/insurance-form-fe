@@ -29,6 +29,7 @@ const Form: React.FC = () => {
       if (type === 'change') {
         setCalculatedCost(null);
         setFormState('ready');
+        setError(null);
       }
     });
     return () => subscription.unsubscribe();
@@ -38,7 +39,7 @@ const Form: React.FC = () => {
     if (isDirty && isValid && !calculatedCost) {
       handleEstimateCost(watch());
     }
-  }, [watch(), isDirty, isValid]);
+  }, [watch, isDirty, isValid]);
 
   const handleFormSubmit = (data: FormInputs) => {
     setFormState('submitting');
