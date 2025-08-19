@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import {  useForm } from 'react-hook-form';
+import {  useForm, useWatch } from 'react-hook-form';
 import useInsuranceCalculator from '../hooks/useInsuranceCalculator';
 import InputField from '../components/form/FormInputField';
 import axios, { AxiosError } from 'axios';
+import LoadingSpinner from '../components/common/LoadingSpinner';
 import type { ApiError, ApiResponse } from '../api/types';
 import { getApiUrl } from '../api/utils';
 
@@ -15,8 +16,11 @@ type FormInputs = {
 
 type FormStateType = 'ready' | 'submitting' | 'error';
 
+const fieldNames = ['type', 'coverageAmount', 'startDate', 'policyDuration'] as const;
+
 const Form: React.FC = () => {
-  const { register, handleSubmit, formState: { errors, isValid, isDirty }, watch } = useForm<FormInputs>({ mode: 'onChange' });
+  const { register, handleSubmit, control, formState: { errors, isValid, isDirty }, watch } = useForm<FormInputs>({ mode: 'onChange' });
+  const watched = useWatch({ name: fieldNames, control });
   const { estimatedCost, handleEstimateCost } = useInsuranceCalculator();
   const [calculatedCost, setCalculatedCost] = useState<number | null>(null);
   const [formState, setFormState] = useState<FormStateType>('ready');
@@ -36,10 +40,12 @@ const Form: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    const values = watch()
     if (isDirty && isValid && !calculatedCost) {
-      handleEstimateCost(watch());
+      handleEstimateCost(values);
     }
-  }, [watch, isDirty, isValid]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDirty, isValid, calculatedCost, ...watched]);
 
   const handleFormSubmit = (data: FormInputs) => {
     setFormState('submitting');
@@ -130,13 +136,7 @@ const Form: React.FC = () => {
           </p>
         )}
         {(formState === 'submitting') && (
-          <div className="flex justify-center items-center mt-4">
-            <svg className="animate-spin h-6 w-6 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-            </svg>
-            <span className="ml-2 text-blue-500">Calculating...</span>
-          </div>
+          <LoadingSpinner className="mt-4 justify-center" label="Calculating..." />
         )}
         {formState === 'error' && (
           <div className="mt-4 text-red-500">
